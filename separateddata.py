@@ -2,6 +2,7 @@ import os
 import pandas as pd
 import json
 from collections import deque
+import csv 
 
 # Function to extract data from a combined file
 def extract_combined_data(file_path):
@@ -39,19 +40,14 @@ def extract_combined_data(file_path):
     # Replace NaN values in 'Review' with "null"
     movies_df['Review'] = movies_df['Review'].apply(lambda x: None if pd.isna(x) else x)
 
-    # Convert DataFrame to a list of dictionaries
-    movies_list = movies_df.to_dict(orient='records')
-
-    return user, movies_list, followers, following
+    return user, followers, following, movies_df
 
 # Path to the folder containing combined files
 folder_path = "userdata/"
 
-# Output file for saving follower and following information
-output_follow_info_path = "output_follow_information.json"
-
-# Output file for saving movie review data
-output_movies_info_path = "output_movies_information.json"
+# Create a folder for output files if it doesn't exist
+output_folder = "output_data"
+os.makedirs(output_folder, exist_ok=True)
 
 # Create empty lists to store information
 follow_info_list = []
@@ -66,7 +62,7 @@ for file in os.listdir(folder_path):
         file_path = os.path.join(folder_path, file)
 
         # Extract information from the combined file
-        user, movies, followers, following = extract_combined_data(file_path)
+        user, followers, following, movies_df = extract_combined_data(file_path)
 
         # Filter followers and followees based on original_users
         filtered_followers = [follower for follower in followers if follower in original_users]
@@ -82,13 +78,32 @@ for file in os.listdir(folder_path):
         # Add the movie review data to the list
         movies_info_list.append({
             'User': user,
-            'Movies': movies
+            'Movies': movies_df.to_dict(orient='records')
         })
 
 # Save follower and following information to a JSON file
-with open(output_follow_info_path, 'w') as json_follow_file:
+output_follow_info_path_json = os.path.join(output_folder, "output_follow_information.json")
+with open(output_follow_info_path_json, 'w') as json_follow_file:
     json.dump(follow_info_list, json_follow_file, indent=2)
 
+# Save follower and following information to a CSV file
+output_follow_info_path_csv = os.path.join(output_folder, "output_follow_information.csv")
+follow_df = pd.DataFrame(follow_info_list)
+follow_df.to_csv(output_follow_info_path_csv, index=False)
+
 # Save movie review data to a JSON file
-with open(output_movies_info_path, 'w') as json_movies_file:
+output_movies_info_path_json = os.path.join(output_folder, "output_movies_information.json")
+with open(output_movies_info_path_json, 'w') as json_movies_file:
     json.dump(movies_info_list, json_movies_file, indent=2)
+
+# Save movie review data to a CSV file with selected string columns enclosed in quotes
+output_movies_info_path_csv = os.path.join(output_folder, "output_movies_information.csv")
+movies_df_concatenated = pd.concat([pd.DataFrame(data['Movies']).assign(User=data['User']) for data in movies_info_list], ignore_index=True)
+
+# Enclose selected string columns in quotes if they exist
+string_columns = ['Movie', 'Review']  # Add more columns if needed
+for col in string_columns:
+    movies_df_concatenated[col] = "'" + movies_df_concatenated[col] + "'"
+
+movies_df_concatenated.to_csv(output_movies_info_path_csv, index=False)
+
