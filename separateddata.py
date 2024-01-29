@@ -2,7 +2,6 @@ import os
 import pandas as pd
 import json
 from collections import deque
-import csv 
 
 # Function to extract data from a combined file
 def extract_combined_data(file_path):
@@ -100,10 +99,12 @@ with open(output_movies_info_path_json, 'w') as json_movies_file:
 output_movies_info_path_csv = os.path.join(output_folder, "output_movies_information.csv")
 movies_df_concatenated = pd.concat([pd.DataFrame(data['Movies']).assign(User=data['User']) for data in movies_info_list], ignore_index=True)
 
+"""
 # Enclose selected string columns in quotes if they exist
 string_columns = ['Movie', 'Review']  # Add more columns if needed
 for col in string_columns:
     movies_df_concatenated[col] = "'" + movies_df_concatenated[col] + "'"
+"""
 
 movies_df_concatenated.to_csv(output_movies_info_path_csv, index=False)
 
