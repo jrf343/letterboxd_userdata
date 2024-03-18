@@ -49,8 +49,9 @@ output_folder = "output_data"
 os.makedirs(output_folder, exist_ok=True)
 
 # Create empty lists to store information
-follow_info_list = []
+edge_list = []
 movies_info_list = []
+follow_info_list = []
 
 # Original user list from file names
 original_users = set(os.path.splitext(f)[0][:-5] for f in os.listdir(folder_path) if f.endswith('.csv'))
@@ -67,6 +68,25 @@ for file in os.listdir(folder_path):
         filtered_followers = [follower for follower in followers if follower in original_users]
         filtered_following = [followee for followee in following if followee in original_users]
 
+        # Add the following and follower information to the edge list
+        for follower in filtered_followers:
+            edge_list.append({
+                'Source': user,
+                'Target': follower
+            })
+
+        for followee in filtered_following:
+            edge_list.append({
+                'Source': user,
+                'Target': followee
+            })
+
+        # Add the movie review data to the list
+        movies_info_list.append({
+            'User': user,
+            'Movies': movies_df.to_dict(orient='records')
+        })
+        
         # Add the following and follower information to the list
         follow_info_list.append({
             'User': user,
@@ -74,11 +94,10 @@ for file in os.listdir(folder_path):
             'Following': filtered_following
         })
 
-        # Add the movie review data to the list
-        movies_info_list.append({
-            'User': user,
-            'Movies': movies_df.to_dict(orient='records')
-        })
+# Save edge list to a CSV file
+output_edge_list_path_csv = os.path.join(output_folder, "output_edge_list.csv")
+edge_df = pd.DataFrame(edge_list)
+edge_df.to_csv(output_edge_list_path_csv, index=False)
 
 # Save follower and following information to a JSON file
 output_follow_info_path_json = os.path.join(output_folder, "output_follow_information.json")
@@ -99,12 +118,4 @@ with open(output_movies_info_path_json, 'w') as json_movies_file:
 output_movies_info_path_csv = os.path.join(output_folder, "output_movies_information.csv")
 movies_df_concatenated = pd.concat([pd.DataFrame(data['Movies']).assign(User=data['User']) for data in movies_info_list], ignore_index=True)
 
-"""
-# Enclose selected string columns in quotes if they exist
-string_columns = ['Movie', 'Review']  # Add more columns if needed
-for col in string_columns:
-    movies_df_concatenated[col] = "'" + movies_df_concatenated[col] + "'"
-"""
-
 movies_df_concatenated.to_csv(output_movies_info_path_csv, index=False)
-

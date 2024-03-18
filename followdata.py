@@ -53,7 +53,7 @@ for file in files:
     user, followers, following = extract_follow_data(os.path.join(folder_path, file))
 
     # Add user to set if it's in the original list
-    if user in original_users:
+    if (0 < len(followers)) and (0 < len(following)) and (user in original_users):
         unique_users.add(user)
 
         # Add edges to the graph for users in the original list
